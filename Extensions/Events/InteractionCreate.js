@@ -107,7 +107,7 @@ module.exports = {
         await interaction.channel.delete();
 
         await ticketUser.send(
-          `${ticketUser}님 **문제사항** 또는 **궁금증**이 해결됐으면 좋겠습니다.\n다음에 또 비슷한 일로 문의를 하실때는 **\`티켓 ID(${ticketId})\`**를 관리자에게 알려주세요.`
+          `${ticketUser}님 **문제사항** 또는 **궁금증**이 해결됐으면 좋겠습니다.\n다음에 또 비슷한 일로 문의를 하실 때는 **\`티켓 ID(${ticketId})\`**를 관리자에게 알려주세요.`
         );
       }
     } else if (interaction.isModalSubmit()) {
@@ -225,7 +225,8 @@ module.exports = {
               );
 
               await interaction.editReply({
-                content: `${channel} **채널**로 가셔서 **자신**의 **티어**를 증명하세요.`,
+                content: `${channel} **채널**로 가셔서 **자신**의 **티어**를 증명하세요.\n**\`불멸\`**, **\`레디언트\`** **티어**와 **닉네임** 보이게 **경쟁전 시작화면** or **순위표** 스크린샷 해주세요.\n\`[!] 모두 현재 시즌으로 올려주세요\`
+                `,
                 components: [],
               });
             }
