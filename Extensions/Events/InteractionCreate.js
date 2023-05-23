@@ -46,6 +46,49 @@ module.exports = {
       if (interaction.customId == 'show') {
         await interaction.showModal(showModalBuilder());
       }
+
+      if (interaction.customId == 'tkclose') {
+        const ticketUser = await client.users.fetch(interaction.channel.topic);
+        const logChannel = client.channels.cache.get('848872116102889492');
+        const ticketId = interaction.channel.name.substr(6);
+        const attachment = await discordTranscripts.createTranscript(
+          interaction.channel,
+          { poweredBy: false }
+        );
+
+        const embed = new EmbedBuilder()
+          .setAuthor({
+            name: ticketUser.tag,
+            iconURL: ticketUser.avatarURL(),
+          })
+          .setDescription(
+            '티켓이 비활성화 되었습니다.\n`[!] 파일을 다운로드하여 대화 내역을 확인할 수 있습니다.`'
+          )
+          .setColor(0xe06469)
+          .addFields(
+            {
+              name: '> 🪪 **ID**',
+              value: ticketId,
+              inline: true,
+            },
+            {
+              name: '🕖 **HISTORY**',
+              value: `<t:${Math.floor(new Date().getTime() / 1000)}:t>`,
+              inline: true,
+            }
+          );
+
+        await logChannel.send({ files: [attachment], embeds: [embed] });
+        await interaction.channel.delete();
+
+        try {
+          await ticketUser.send(
+            `${ticketUser}님 **문제사항** 또는 **궁금증**이 해결됐으면 좋겠습니다.\n다음에 또 비슷한 일로 문의를 하실때는 **\`티켓 ID(${ticketId})\`**를 관리자에게 알려주세요.`
+          );
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
 
     /**Modal Events */
@@ -111,11 +154,11 @@ module.exports = {
               (r) => r.id === gender_role[gender]
             );
 
+            await interaction.member.roles.add([ageRole, genderRole]);
             if (
               confirmation.values[0] == '896387175610998835' ||
               confirmation.values[0] == '896386994635157564'
             ) {
-              await interaction.member.roles.add([ageRole, genderRole]);
               const channel = await TicketBuild(
                 interaction.client,
                 interaction.guild,
@@ -126,6 +169,12 @@ module.exports = {
               await interaction.editReply({
                 content: `${channel} **채널**로 가셔서 **자신**의 **티어**를 증명하세요.\n자신의 **티어**와 **닉네임** 보이게 **경쟁전 시작화면** or **순위표** 스크린샷 해주세요.\n\`[!] 모두 현재 시즌으로 올려주세요\`
                 `,
+                components: [],
+              });
+            } else {
+              await interaction.member.roles.add([tierRole]);
+              await interaction.editReply({
+                content: `> ${tierRole}, ${genderRole}, ${ageRole}이 **지급**되었습니다.`,
                 components: [],
               });
             }
