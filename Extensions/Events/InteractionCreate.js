@@ -1,4 +1,10 @@
-const { Events, ChannelType, PermissionsBitField } = require('discord.js');
+const {
+  Events,
+  ChannelType,
+  PermissionsBitField,
+  EmbedBuilder,
+} = require('discord.js');
+const discordTranscripts = require('discord-html-transcripts');
 const { showModalBuilder, ShowSelectMenuBuilder } = require('../Module/myShow');
 const { TicketBuild } = require('../Module/createChannel');
 
@@ -41,6 +47,21 @@ module.exports = {
       await command.execute(interaction);
     }
 
+    if (interaction.isStringSelectMenu()) {
+      if (interaction.customId == 'ticket') {
+        const channel = await TicketBuild(
+          interaction.client,
+          interaction.guild,
+          interaction.user,
+          interaction.values[0]
+        );
+        await interaction.reply({
+          content: `${channel}로 가셔서 지원을 받아주세요.`,
+          ephemeral: true,
+        });
+      }
+    }
+
     /**Button Events */
     if (interaction.isButton()) {
       if (interaction.customId == 'show') {
@@ -48,8 +69,11 @@ module.exports = {
       }
 
       if (interaction.customId == 'tkclose') {
-        const ticketUser = await client.users.fetch(interaction.channel.topic);
-        const logChannel = client.channels.cache.get('848872116102889492');
+        const ticketUser = await interaction.client.users.fetch(
+          interaction.channel.topic
+        );
+        const logChannel =
+          interaction.client.channels.cache.get('848872116102889492');
         const ticketId = interaction.channel.name.substr(6);
         const attachment = await discordTranscripts.createTranscript(
           interaction.channel,
@@ -140,7 +164,7 @@ module.exports = {
             time: 60_000,
           });
 
-          if (confirmation) {
+          if (confirmation.customId === 'tierSelecter') {
             const defaultRole = interaction.guild.roles.cache.find(
               (r) => r.id === '830086230166339597'
             );
@@ -154,6 +178,7 @@ module.exports = {
               (r) => r.id === gender_role[gender]
             );
 
+            await interaction.member.roles.remove(defaultRole);
             await interaction.member.roles.add([ageRole, genderRole]);
             if (
               confirmation.values[0] == '896387175610998835' ||

@@ -9,12 +9,21 @@ const {
 
 async function TicketBuild(client, guild, member, type) {
   const ticketId = Math.random().toString(36).substring(2, 8);
-  let chanName = '';
+  let chanTag = '';
   if (type == 'roles') {
-    chanName = `🔱・불레-${ticketId}`;
+    chanTag = '🔱・불레';
+  } else if (type == 'report') {
+    chanTag = '🚨・신고';
+  } else if (type == 'game') {
+    chanTag = '🎮・프로';
+  } else if (type == 'youtube') {
+    chanTag = '🎬・유튜버';
+  } else if (type == 'etc') {
+    chanTag = '🗂️・기타';
   }
+
   const channel = await guild.channels.create({
-    name: chanName,
+    name: chanTag + `-${ticketId}`,
     type: ChannelType.GuildText,
     parent: '848842003319357480',
     topic: member.id,
@@ -34,7 +43,7 @@ async function TicketBuild(client, guild, member, type) {
   });
 
   const embed = new EmbedBuilder()
-    .setTitle(chanName)
+    .setTitle(chanTag + `-${ticketId}`)
     .setDescription(
       '**잠시만 기다려주세요. 관리팀이 최대한 빨리 확인하고 답장할 거에요!**\n\n> `지원을 종료하시려면 아래의 버튼을 눌러주세요. (관리자 또는 티켓 생성자)`'
     );
