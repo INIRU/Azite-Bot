@@ -22,7 +22,7 @@ function showModalBuilder() {
 
   const ageInputRow = new ActionRowBuilder().addComponents(ageInput);
 
-  showModal.addComponents(ageInputRow, genderInputRow);
+  showModal.addComponents(ageInputRow);
 
   return showModal;
 }
