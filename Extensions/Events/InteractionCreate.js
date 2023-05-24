@@ -1,14 +1,11 @@
 const {
-  ActionRowBuilder,
   Events,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
+  ChannelType,
+  PermissionsBitField,
   EmbedBuilder,
 } = require('discord.js');
 const discordTranscripts = require('discord-html-transcripts');
+const { showModalBuilder, ShowSelectMenuBuilder } = require('../Module/myShow');
 const { TicketBuild } = require('../Module/createChannel');
 
 age_role = {
@@ -27,54 +24,56 @@ gender_role = {
 
 module.exports = {
   name: Events.InteractionCreate,
-  async execute(client, interaction) {
+  once: false,
+  async execute(interaction) {
+    if (interaction.user.bot) return;
+    if (interaction.channel.type == ChannelType.DM) return;
+
+    /**Channels */
+    const logChannel =
+      interaction.client.channels.cache.get('848872116102889492');
+
+    /**Slash Commands Input */
     if (interaction.isChatInputCommand()) {
       const command = interaction.client.commands.get(interaction.commandName);
 
       if (!command) {
-        console.error(`${interaction.commandName}를 찾을 수 없습니다.`);
+        console.error(
+          `${interaction.commandName}는 등록되지 않은 명령어 입니다.`
+        );
         return;
       }
 
-      try {
-        await command.execute(client, interaction);
-      } catch (error) {
-        console.log(error);
-      }
-    } else if (interaction.isButton()) {
-      if (interaction.customId == 'show') {
-        const showModal = new ModalBuilder()
-          .setTitle('자기소개')
-          .setCustomId('show');
+      await command.execute(interaction);
+    }
 
-        const ageInput = new TextInputBuilder()
-          .setCustomId('age')
-          .setLabel('나이')
-          .setPlaceholder('현재 기준 나이를 입력하여주세요.')
-          .setMinLength(2)
-          .setMaxLength(2)
-          .setStyle(TextInputStyle.Short);
-
-        const genderInput = new TextInputBuilder()
-          .setCustomId('gender')
-          .setLabel('성별')
-          .setPlaceholder('자신의 성별을 입력하여주세요.')
-          .setValue('남여')
-          .setMinLength(2)
-          .setMaxLength(2)
-          .setStyle(TextInputStyle.Short);
-
-        const ageInputRow = new ActionRowBuilder().addComponents(ageInput);
-        const genderInputRow = new ActionRowBuilder().addComponents(
-          genderInput
+    if (interaction.isStringSelectMenu()) {
+      if (interaction.customId == 'ticket') {
+        const channel = await TicketBuild(
+          interaction.client,
+          interaction.guild,
+          interaction.user,
+          interaction.values[0]
         );
+        await interaction.reply({
+          content: `${channel}로 가셔서 지원을 받아주세요.`,
+          ephemeral: true,
+        });
+      }
+    }
 
-        showModal.addComponents(ageInputRow, genderInputRow);
+    /**Button Events */
+    if (interaction.isButton()) {
+      if (interaction.customId == 'show') {
+        await interaction.showModal(showModalBuilder());
+      }
 
-        await interaction.showModal(showModal);
-      } else if (interaction.customId == 'tkclose') {
-        const ticketUser = await client.users.fetch(interaction.channel.topic);
-        const logChannel = client.channels.cache.get('848872116102889492');
+      if (interaction.customId == 'tkclose') {
+        const ticketUser = await interaction.client.users.fetch(
+          interaction.channel.topic
+        );
+        const logChannel =
+          interaction.client.channels.cache.get('848872116102889492');
         const ticketId = interaction.channel.name.substr(6);
         const attachment = await discordTranscripts.createTranscript(
           interaction.channel,
@@ -106,22 +105,42 @@ module.exports = {
         await logChannel.send({ files: [attachment], embeds: [embed] });
         await interaction.channel.delete();
 
-        await ticketUser.send(
-          `${ticketUser}님 **문제사항** 또는 **궁금증**이 해결됐으면 좋겠습니다.\n다음에 또 비슷한 일로 문의를 하실때는 **\`티켓 ID(${ticketId})\`**를 관리자에게 알려주세요.`
-        );
+        try {
+          await ticketUser.send(
+            `${ticketUser}님 **문제사항** 또는 **궁금증**이 해결됐으면 좋겠습니다.\n다음에 또 비슷한 일로 문의를 하실때는 **\`티켓 ID(${ticketId})\`**를 관리자에게 알려주세요.`
+          );
+        } catch (e) {
+          console.error(e);
+        }
       }
-    } else if (interaction.isModalSubmit()) {
+    }
+
+    /**Modal Events */
+    if (interaction.isModalSubmit()) {
       if (interaction.customId == 'show') {
-        const age = interaction.fields.getTextInputValue('age');
-        if (age < 15) {
+        /**Age Input Value */
+        let age = interaction.fields.getTextInputValue('age');
+        var regex = /[^0-9]/g;
+        age = age.replace(regex, '');
+        try {
+          const ageParse = parseInt(age.match(/\d+/g)[0]);
+          if (ageParse < 15) {
+            await interaction.reply({
+              content:
+                '죄송합니다. 저희 서버는 **`15`**세 이상만 받고있습니다.',
+              ephemeral: true,
+            });
+            return;
+          }
+        } catch (e) {
           await interaction.reply({
-            content: '죄송합니다. **`15`**세 이상만 받고있습니다.',
+            content: `**숫자**만 입력하여주세요.\n> \`입력값\` : ${age}`,
             ephemeral: true,
           });
           return;
-        } else if (age >= 20) {
-          age = '20';
         }
+
+        /**Gender Input Value */
         const gender = interaction.fields.getTextInputValue('gender');
         if (gender != '남자' && gender != '여자') {
           await interaction.reply({
@@ -131,53 +150,10 @@ module.exports = {
           return;
         }
 
-        const select = new StringSelectMenuBuilder()
-          .setCustomId('tierSelecter')
-          .setPlaceholder('티어를 선택하여주세요.')
-          .addOptions(
-            new StringSelectMenuOptionBuilder()
-              .setLabel('아이언')
-              .setValue('809832298790518845')
-              .setEmoji('1102544451441799178'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('브론즈')
-              .setValue('757754722995273849')
-              .setEmoji('1102544309770788914'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('실버')
-              .setValue('757754794889707581')
-              .setEmoji('1102544556685271161'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('골드')
-              .setValue('757754786853683241')
-              .setEmoji('1102544377169072158'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('플래티넘')
-              .setValue('757754908878569643')
-              .setEmoji('1102544491019251722'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('다이아몬드')
-              .setValue('757754997848145998')
-              .setEmoji('1102545153828339743'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('초월자')
-              .setValue('989285274456588328')
-              .setEmoji('1102544272659582996'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('불멸')
-              .setValue('896387175610998835')
-              .setEmoji('1102544415836352532'),
-            new StringSelectMenuOptionBuilder()
-              .setLabel('레디언트')
-              .setValue('896386994635157564')
-              .setEmoji('1102544528893808690')
-          );
-
-        const row = new ActionRowBuilder().addComponents(select);
-
+        /**Tier Select Menu */
         const response = await interaction.reply({
-          content: '자신의 티어를 선택하여주세요.',
-          components: [row],
+          content: '자신의 현재 티어를 선택하여주세요.',
+          components: [ShowSelectMenuBuilder()],
           ephemeral: true,
         });
 
@@ -188,7 +164,7 @@ module.exports = {
             time: 60_000,
           });
 
-          if (confirmation) {
+          if (confirmation.customId === 'tierSelecter') {
             const defaultRole = interaction.guild.roles.cache.find(
               (r) => r.id === '830086230166339597'
             );
@@ -202,39 +178,41 @@ module.exports = {
               (r) => r.id === gender_role[gender]
             );
 
+            await interaction.member.roles.remove(defaultRole);
+            await interaction.member.roles.add([ageRole, genderRole]);
             if (
-              confirmation.values[0] != '896387175610998835' &&
-              confirmation.values[0] != '896386994635157564'
+              confirmation.values[0] == '896387175610998835' ||
+              confirmation.values[0] == '896386994635157564'
             ) {
-              await interaction.member.roles.add([
-                ageRole,
-                genderRole,
-                tierRole,
-              ]);
-              await interaction.editReply({
-                content: `> ${tierRole}, ${genderRole}, ${ageRole}이 **지급**되었습니다.`,
-                components: [],
-              });
-            } else {
-              await interaction.member.roles.add([ageRole, genderRole]);
               const channel = await TicketBuild(
-                client,
+                interaction.client,
                 interaction.guild,
                 interaction.user,
                 'roles'
               );
 
               await interaction.editReply({
-                content: `${channel} **채널**로 가셔서 **자신**의 **티어**를 증명하세요.`,
+                content: `${channel} **채널**로 가셔서 **자신**의 **티어**를 증명하세요.\n자신의 **티어**와 **닉네임** 보이게 **경쟁전 시작화면** or **순위표** 스크린샷 해주세요.\n\`[!] 모두 현재 시즌으로 올려주세요\`
+                `,
+                components: [],
+              });
+            } else {
+              await interaction.member.roles.add([tierRole]);
+              await interaction.editReply({
+                content: `> ${tierRole}, ${genderRole}, ${ageRole}이 **지급**되었습니다.`,
                 components: [],
               });
             }
           }
+
+          return;
         } catch (e) {
-          await response.editReply({
-            content: '시간이 초과되었습니다.',
-            components: [],
-          });
+          if (e.code == 'InteractionCollectorError') {
+            await interaction.editReply({
+              content: '시간이 초과되었습니다.',
+              components: [],
+            });
+          } else console.log(e);
         }
       }
     }
