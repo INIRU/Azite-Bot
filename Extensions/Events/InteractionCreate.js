@@ -140,16 +140,6 @@ module.exports = {
           return;
         }
 
-        /**Gender Input Value */
-        const gender = interaction.fields.getTextInputValue('gender');
-        if (gender != '남자' && gender != '여자') {
-          await interaction.reply({
-            content: '죄송합니다. **`남자`**, **`여자`**중에서 입력하여주세요.',
-            ephemeral: true,
-          });
-          return;
-        }
-
         /**Tier Select Menu */
         const response = await interaction.reply({
           content: '자신의 현재 티어를 선택하여주세요.',
@@ -174,12 +164,9 @@ module.exports = {
             const ageRole = interaction.guild.roles.cache.find(
               (r) => r.id === age_role[age]
             );
-            const genderRole = interaction.guild.roles.cache.find(
-              (r) => r.id === gender_role[gender]
-            );
 
             await interaction.member.roles.remove(defaultRole);
-            await interaction.member.roles.add([ageRole, genderRole]);
+            await interaction.member.roles.add(ageRole);
             if (
               confirmation.values[0] == '896387175610998835' ||
               confirmation.values[0] == '896386994635157564'
@@ -199,7 +186,7 @@ module.exports = {
             } else {
               await interaction.member.roles.add([tierRole]);
               await interaction.editReply({
-                content: `> ${tierRole}, ${genderRole}, ${ageRole}이 **지급**되었습니다.`,
+                content: `> ${tierRole}, ${ageRole}이 **지급**되었습니다.`,
                 components: [],
               });
             }
