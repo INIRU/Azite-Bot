@@ -20,18 +20,9 @@ function showModalBuilder() {
     .setMaxLength(2)
     .setStyle(TextInputStyle.Short);
 
-  const genderInput = new TextInputBuilder()
-    .setCustomId('gender')
-    .setLabel('성별')
-    .setPlaceholder('자신의 성별을 입력하여주세요.')
-    .setMinLength(2)
-    .setMaxLength(2)
-    .setStyle(TextInputStyle.Short);
-
   const ageInputRow = new ActionRowBuilder().addComponents(ageInput);
-  const genderInputRow = new ActionRowBuilder().addComponents(genderInput);
 
-  showModal.addComponents(ageInputRow, genderInputRow);
+  showModal.addComponents(ageInputRow);
 
   return showModal;
 }
